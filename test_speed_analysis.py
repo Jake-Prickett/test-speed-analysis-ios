@@ -25,59 +25,72 @@ import os
 import sys
 import traceback
 
-testThreshold = 0.7
-timeAboveThreshold = 0.0
+class Analyzer:
 
-def printHeader():
-    print "\n------------------------------------"
-    print "| Test Speed Analysis              |"
-    print "| Test Threashold: %.1fs            |" % testThreshold
-    print "------------------------------------"
+    _timeAboveThreshold = 0.0
 
-def addTimeLost(value):
-    diff = value - testThreshold
+    def __init__(self, testThreshold=0.01, filePath="logs"):
+        self.testThreshold = testThreshold
+        self.filePath = filePath
+
+    def printHeader(self):
+        print "\n------------------------------------"
+        print "| Test Speed Analysis              |"
+        print "| Test Threashold: %.3fs           |" % self.testThreshold
+        print "------------------------------------"
+
+    def addTimeLost(self, value):
+        diff = value - self.testThreshold
+
+        self._timeAboveThreshold += diff
+
+    def cleanup(self, fLine):
+        fLine = fLine.replace("(", "")
+        fLine = fLine.replace(")", "")
+        fLine = fLine.split()
         
-    global timeAboveThreshold
-    timeAboveThreshold += diff
+        return ("%s %s" % (fLine[2], fLine[3]), float(fLine[5]))
 
-def cleanup(fLine):
-    fLine = fLine.replace("(", "")
-    fLine = fLine.replace(")", "")
-    fLine = fLine.split()
+    def printOutput(self, fileName, fileTests):
+        print "\n--------------- %s ---------------" % fileName
+        print "Tests with runtime greater than %.1f s: %d" % (self.testThreshold, len(fileTests))
+        
+        for (testName, runTime) in fileTests:
+            self.addTimeLost(runTime)
+            print "%s - %.3fs" % (testName, runTime)
+
+    def analyzeFile(self, fName, fPath):
+        tests = []
+        path = "%s/%s" % (fPath, fName)
+        
+        with open(path, "r") as file:
+            for line in file:
+                if "started" in line: continue
+                if "Test Case" in line and "passed" in line:
+                    tests.append(self.cleanup(line))
+
+        tests = sorted(tests, key=lambda x: x[1], reverse=True)
+        tests = filter(lambda x: x[1] > self.testThreshold, tests)
+
+        self.printOutput(fName, tests)
+
+    def printTimeLost(self):
+        print "\n---------------------------"
+        
+        if self._timeAboveThreshold > 0.0:
+            print "\nTotal Time Lost: %.2f mins" % (self._timeAboveThreshold/60)
+        else:
+            print "No Tests Above Threshold"
     
-    return ("%s %s" % (fLine[2], fLine[3]), float(fLine[5]))
+    def analyze(self):
+        files = os.listdir(self.filePath)
 
-def printOutput(fileName, fileTests):
-    print "\n--------------- %s ---------------" % fileName
-    print "Tests with runtime greater than %.1f s: %d" % (testThreshold, len(fileTests))
-    
-    for (testName, runTime) in fileTests:
-        addTimeLost(runTime)
-        print "%s - %.3fs" % (testName, runTime)
+        self.printHeader()
 
-def analyzeFile(fName, fPath):
-    tests = []
-    path = "%s/%s" % (fPath, fName)
-    
-    with open(path, "r") as file:
-        for line in file:
-            if "started" in line: continue
-            if "Test Case" in line and "passed" in line:
-                tests.append(cleanup(line))
+        for file in files:
+            self.analyzeFile(file, self.filePath)
 
-    tests = sorted(tests, key=lambda x: x[1], reverse=True)
-    tests = filter(lambda x: x[1] > testThreshold, tests)
-
-    printOutput(fName, tests)
-
-def printTimeLost():
-    print "\n---------------------------"
-    
-    if timeAboveThreshold > 0.0:
-        print "\nTotal Time Lost: %.2f mins" % (timeAboveThreshold/60)
-    else:
-        print "No Tests Above Threshold"
-
+        self.printTimeLost()
 
 def main():
     filePath = ""
@@ -87,18 +100,13 @@ def main():
     else:
         filePath = "logs"
 
-    files = os.listdir(filePath)
+    analyzer = Analyzer()
+    analyzer.analyze()
 
-    printHeader()
-
-    for file in files:
-        analyzeFile(file, filePath)
-
-    printTimeLost()
-
-try:
-    main()
-except:
-    print "\n!! ERROR! Issue Processing Log Files :( !!"
-    print "------------------------------------------"
-    print traceback.print_exc()
+if __name__ == "__main__":
+    try:
+        main()
+    except:
+        print "\n!! ERROR! Issue Processing Log Files :( !!"
+        print "------------------------------------------"
+        print traceback.print_exc()
