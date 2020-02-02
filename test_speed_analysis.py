@@ -3,35 +3,39 @@
 #
 # Intent:
 #      - Identify slow running tests for optimization
-#      - Begin to define test threshold stored in var - testThreshold
+#      - Begin to define test threshold
+# 
+# usage: test_speed_analysis.py [-h] [-p PATH] [-m MAX] [-s]
+# Process .log files generated when running Xcode Unit Tests.
 #
-# Use:
-# Option 1) Place log files from successful CI run into a `logs` folder
-#               Script will automatically detect & output stats
-#           ex. `python test_speed_analysis.py`
-#
-# Option 2) Provide command line argument to specific folder path containing
-#               log files from CI build. Script will automatically detect &
-#               output stats
-#               `python test_speed_analysis.py __file_path_arg__`
-#
-#           ex. `python test_speed_analysis.py /tmp/`
-#                added ability to integrate with CI
+# optional arguments:
+#   -h, --help            show this help message and exit
+#   -p PATH, --path PATH  The location in which your .log files are located
+#   -m MAX, --max MAX     The maximum time (in seconds) in which one Unit Test
+#                         should take.
+#   -s, --strict          Fail the run if tests are discovered over the
+#                         threshold
+# 
+# Place .log files from successful CI run into a `logs` folder
+#      Script will automatically detect & output stats
+#      ex. `python test_speed_analysis.py`
 #
 # Jake Prickett
 #
 
 import os
 import sys
+import argparse
 import traceback
 
 class Analyzer:
 
     _timeAboveThreshold = 0.0
 
-    def __init__(self, testThreshold=0.01, filePath="logs"):
+    def __init__(self, testThreshold=0.01, filePath="logs", strict=False):
         self.testThreshold = testThreshold
         self.filePath = filePath
+        self.strict = strict
 
     def printHeader(self):
         print "\n------------------------------------"
@@ -79,6 +83,9 @@ class Analyzer:
         
         if self._timeAboveThreshold > 0.0:
             print "\nTotal Time Lost: %.2f mins" % (self._timeAboveThreshold/60)
+            if self.strict:
+                print("\nFailure: Tests found with execution time greater than the provided threshold.")
+                exit(1)
         else:
             print "No Tests Above Threshold"
     
@@ -93,20 +100,34 @@ class Analyzer:
         self.printTimeLost()
 
 def main():
-    filePath = ""
+    parser = argparse.ArgumentParser(description='Process .log files generated when running Xcode Unit Tests.')
     
-    if ( len(sys.argv) - 1 ) == 1:
-        filePath = str(sys.argv[1])
-    else:
-        filePath = "logs"
+    parser.add_argument(
+        '-p',
+        '--path',
+        default="logs", 
+        help='The directory in which your .log files are located'
+        )
 
-    analyzer = Analyzer()
+    parser.add_argument(
+        '-m',
+        '--max', 
+        default=0.01, 
+        help='The maximum time (in seconds) in which one Unit Test should take.', 
+        type=float
+        )
+
+    parser.add_argument(
+        '-s', 
+        '--strict',
+        action='store_true',
+        help='Fail the run if tests are discovered over the threshold'
+        )
+
+    args = parser.parse_args()
+    
+    analyzer = Analyzer(args.max, args.path, args.strict)
     analyzer.analyze()
 
 if __name__ == "__main__":
-    try:
-        main()
-    except:
-        print "\n!! ERROR! Issue Processing Log Files :( !!"
-        print "------------------------------------------"
-        print traceback.print_exc()
+    main()
