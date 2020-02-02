@@ -99,6 +99,12 @@ class Analyzer:
 
         self.printTimeLost()
 
+def dir_path(string):
+    if os.path.isdir(string):
+        return string
+    else:
+        raise NotADirectoryError(string)
+
 def main():
     parser = argparse.ArgumentParser(description='Process .log files generated when running Xcode Unit Tests.')
     
@@ -106,6 +112,7 @@ def main():
         '-p',
         '--path',
         default="logs", 
+        type=dir_path,
         help='The directory in which your .log files are located'
         )
 
