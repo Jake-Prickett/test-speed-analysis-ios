@@ -12,6 +12,8 @@ Test Run Time Analysis
 
 Works with one `.log` file, or as many as you'd like in a directory! 
 
+These are typically found in `~/Library/Logs/scan` or if you'd like to specify the path through Fastlane [Scan's buildlog_path command](https://docs.fastlane.tools/actions/scan/#parameters).
+
 ```
 usage: test_analysis.py [-h] [-p PATH] [-m MAX] [-s]
 
