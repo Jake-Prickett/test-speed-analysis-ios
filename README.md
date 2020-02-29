@@ -25,7 +25,3 @@ optional arguments:
   -s, --strict          Fail the run if tests are discovered over the
                         threshold
 ```
-
-# TODO:
- - [ ] Dive deep into use options
- - [ ] Example running/output
