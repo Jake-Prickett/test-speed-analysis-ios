@@ -9,17 +9,22 @@ Test Run Time Analysis
      - Identify how much time can be saved if all tests are below threshold
 
 # Use
- Option 1) Place log files from successful CI run into a `logs` folder
-               Script will automatically detect & output stats
-           ex. `python test_speed_analysis.py`
 
- Option 2) Provide command line argument to specific folder path containing
-               log files from CI build. Script will automatically detect &
-               output stats
-               `python test_speed_analysis.py __file_path_arg__`
+Works with one `.log` file, or as many as you'd like in a directory! 
 
-           ex. `python test_speed_analysis.py /tmp/`
-                added ability to integrate with CI
+```
+usage: test_analysis.py [-h] [-p PATH] [-m MAX] [-s]
+
+Process .log files generated when running Xcode Unit Tests.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PATH, --path PATH  The directory in which your .log files are located
+  -m MAX, --max MAX     The maximum time (in seconds) in which one Unit Test
+                        should take.
+  -s, --strict          Fail the run if tests are discovered over the
+                        threshold
+```
 
 # TODO:
  - [ ] Dive deep into use options
